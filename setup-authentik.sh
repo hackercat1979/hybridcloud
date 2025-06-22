@@ -38,12 +38,16 @@ echo "➡️ Starting Authentik..."
 docker-compose up -d
 
 echo "Waiting for Authentik backend to be ready..."
-until curl -s http://localhost:9000/ > /dev/null; do
+
+while true; do
+  RESPONSE=$(curl -s "$AUTHENTIK_URL")
+  if [[ "$RESPONSE" != *"failed to connect to authentik backend: authentik starting"* ]]; then
+    echo "✅ Authentik backend is ready!"
+    break
+  fi
   echo -n "."
   sleep 2
 done
-echo
-echo "✅ Authentik is up!"
 
 
 # OPTIONAL: Configure firewall (commented out for testing)
