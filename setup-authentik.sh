@@ -84,3 +84,24 @@ echo "Authentik is now running on port 9000."
 echo "Access setup: http://$TAILSCALE_IP:9000/if/flow/initial-setup/"
 echo "Recommended: Put Authentik behind Nginx Proxy Manager (e.g., https://auth.yourdomain.com)"
 echo "If Tailscale is not connected, you will not be able to access via Tailscale IP."
+
+echo "Installing and configuring UFW to allow only Tailscale access..."
+
+apt install -y -qq ufw &>/dev/null
+
+# Default deny all incoming traffic from the internet
+ufw default deny incoming
+ufw default allow outgoing
+
+# Allow SSH from Tailscale
+ufw allow in on tailscale0 to any port 22 proto tcp
+
+# Allow Authentik internal HTTP (9000) and HTTPS (9443) from Tailscale
+ufw allow in on tailscale0 to any port 9000 proto tcp
+ufw allow in on tailscale0 to any port 9443 proto tcp
+
+# Enable the firewall
+ufw --force enable
+
+echo "UFW enabled with Tailscale-only access to SSH, Authentik HTTP (9000), and HTTPS (9443)."
+
