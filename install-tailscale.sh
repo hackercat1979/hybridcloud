@@ -2,6 +2,33 @@
 
 set -e
 
+spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\'
+    while kill -0 $pid 2>/dev/null; do
+        for (( i=0; i<${#spinstr}; i++ )); do
+            printf "\r[%c] %s" "${spinstr:i:1}" "$1"
+            sleep $delay
+        done
+    done
+    printf "\r"
+}
+
+run_with_spinner() {
+    "$@" &
+    spinner "$1"
+    wait $!
+}
+
+echo "Uninstalling any existing Tailscale and jq installations..."
+
+run_with_spinner bash -c "systemctl stop tailscaled 2>/dev/null || true && \
+    systemctl disable tailscaled 2>/dev/null || true && \
+    apt-get remove --purge -y tailscale jq && \
+    rm -f /etc/apt/sources.list.d/tailscale.list /usr/share/keyrings/tailscale-archive-keyring.gpg && \
+    apt-get update -y"
+
 # -------- USER PROMPTS --------
 read -rsp "Enter your Tailscale Auth Key: " TAILSCALE_AUTHKEY
 echo ""
@@ -29,21 +56,18 @@ if [[ "$enable_subnet" =~ ^[Yy]$ ]]; then
     fi
 fi
 
-# -------- INSTALL TAILSCALE AND JQ --------
-echo "Installing Tailscale and jq..."
+echo "Installing Tailscale and jq... Please wait."
 
-apt-get update -y
-apt-get install -y curl gnupg2 jq
+run_with_spinner apt-get update -y
+run_with_spinner apt-get install -y curl gnupg2 jq
 
-# Add GPG key and APT repository (overwrite keyring silently)
 curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.gpg | gpg --yes --dearmor -o /usr/share/keyrings/tailscale-archive-keyring.gpg
 
 echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu jammy main" > /etc/apt/sources.list.d/tailscale.list
 
-apt-get update -y
-apt-get install -y tailscale
+run_with_spinner apt-get update -y
+run_with_spinner apt-get install -y tailscale
 
-# -------- ENABLE IP FORWARDING IF NEEDED --------
 if [[ -n "$ADVERTISE_EXIT_NODE" || -n "$ADVERTISE_SUBNETS" ]]; then
     echo "Enabling IPv4 and IPv6 forwarding for exit node and subnet routing..."
 
@@ -52,11 +76,11 @@ net.ipv4.ip_forward = 1
 net.ipv6.conf.all.forwarding = 1
 EOF
 
-    # Suppress only "Invalid argument" warnings
-    sysctl --system 2>&1 | grep -v "Invalid argument"
+    (sysctl --system 2>&1 | grep -v "Invalid argument") &
+    spinner "Applying sysctl settings..."
+    wait $!
 fi
 
-# -------- START AND AUTHENTICATE --------
 echo "Starting Tailscale and authenticating..."
 
 systemctl enable --now tailscaled
@@ -69,7 +93,6 @@ tailscale up \
     $ADVERTISE_SUBNETS \
     --accept-routes
 
-# -------- OUTPUT --------
 echo ""
 echo "✅ Tailscale started successfully!"
 echo "🌐 Tailscale IPv4 Address:"
