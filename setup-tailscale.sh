@@ -130,6 +130,7 @@ tailscale up \
     $ADVERTISE_SUBNETS
 
 echo ""
-echo "✅ Tailscale started successfully!"
-echo "🌐 Tailscale IPv4 Address:"
-tailscale ip -4
+echo "Tailscale started successfully!"
+echo "Tailscale IPv4 Address: $(tailscale ip -4)"
+#echo "Tailscale IPv4 Address:"
+#tailscale ip -4
