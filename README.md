@@ -8,10 +8,6 @@ curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setu
 sed -i 's/\r$//' setup-tailscale.sh
 bash setup-tailscale.sh
 
-curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-vpn.sh -o setup-vpn.sh
-sed -i 's/\r$//' setup-vpn.sh
-bash setup-vpn.sh -k tskey-auth-k23TFtWpoG11CNTRL-HxWzktC1vVSqpQS6B2gLVSQwRsNqgqnrV -n de-flk-authentik -e false -r false
-
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/install-nginx.sh -o install-nginx.sh
 sed -i 's/\r$//' install-nginx.sh
 bash install-nginx.sh
