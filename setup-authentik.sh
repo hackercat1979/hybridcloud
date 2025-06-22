@@ -18,7 +18,8 @@ echo "Installing Tailscale ..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
 sed -i 's/\r$//' setup-tailscale.sh
 bash setup-tailscale.sh -n de-flk-authentik -e false -r false
-echo "Tailscale installed."
+
+echo "Starting install Authentik ..."
 
 echo "Installing dependencies..."
 apt update -qq &>/dev/null
