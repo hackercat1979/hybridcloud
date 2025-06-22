@@ -11,3 +11,7 @@ bash setup-tailscale.sh
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/install-nginx.sh -o install-nginx.sh
 sed -i 's/\r$//' install-nginx.sh
 bash install-nginx.sh
+
+curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/install-nginx.sh -o install-nginx.sh
+sed -i 's/\r$//' install-nginx.sh
+bash install-nginx.sh
