@@ -51,7 +51,7 @@ if [[ "$enable_subnet" =~ ^[Yy]$ ]]; then
         ADVERTISE_SUBNETS="--advertise-routes=${SUBNETS// /}"
     fi
 fi
-
+#
 echo "Installing prerequisites curl, gnupg2, jq..."
 {
     apt-get update -y >/dev/null 2>&1
