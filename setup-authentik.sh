@@ -41,14 +41,26 @@ docker-compose pull
 echo "➡️ Starting Authentik..."
 docker-compose up -d
 
-echo "Waiting for Authentik backend to be ready..."
+AUTHENTIK_URL="http://localhost:9000/if/flow/initial-setup/"
+MAX_RETRIES=60  # wait up to 2 minutes (60 * 2s)
+RETRIES=0
+
+echo -n "⏳ Waiting for Authentik backend to be ready"
 
 while true; do
   RESPONSE=$(curl -s "$AUTHENTIK_URL")
+  
   if [[ "$RESPONSE" != *"failed to connect to authentik backend: authentik starting"* ]]; then
-    echo "✅ Authentik backend is ready!"
+    echo -e "\n✅ Authentik backend is ready!"
     break
   fi
+
+  ((RETRIES++))
+  if [[ $RETRIES -ge $MAX_RETRIES ]]; then
+    echo -e "\n❌ Timeout waiting for Authentik backend."
+    exit 1
+  fi
+
   echo -n "."
   sleep 2
 done
