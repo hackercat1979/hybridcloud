@@ -37,6 +37,15 @@ docker-compose pull
 echo "➡️ Starting Authentik..."
 docker-compose up -d
 
+echo "Waiting for Authentik backend to be ready..."
+until curl -s http://localhost:9000/ > /dev/null; do
+  echo -n "."
+  sleep 2
+done
+echo
+echo "✅ Authentik is up!"
+
+
 # OPTIONAL: Configure firewall (commented out for testing)
 #: '
 #echo "🛡️ Configuring UFW (optional)..."
