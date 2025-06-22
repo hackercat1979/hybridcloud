@@ -6,7 +6,7 @@ echo "Updating system..."
 apt update && apt upgrade -y
 
 echo "Installing prerequisites..."
-apt install -y curl software-properties-common apt-transport-https ca-certificates
+apt install -y curl software-properties-common apt-transport-https ca-certificates ufw fail2ban
 
 echo "Installing Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
@@ -40,6 +40,34 @@ EOF
 echo "Starting Nginx Proxy Manager with Docker Compose..."
 docker-compose up -d
 
+echo "Configuring firewall with UFW..."
+ufw default deny incoming
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow from 100.64.0.0/10 to any port 81 proto tcp
+
+ufw --force enable
+
+echo "Configuring fail2ban..."
+cat > /etc/fail2ban/jail.local <<EOL
+[DEFAULT]
+bantime = 10m
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled = true
+
+[docker-nginx-http-auth]
+enabled = true
+filter = nginx-http-auth
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = 3
+EOL
+
+systemctl restart fail2ban
+
 echo "Installation complete!"
-echo "Access the admin UI at http://YOUR_SERVER_IP:81"
+echo "Access the admin UI over Tailscale at port 81 or public web on ports 80/443."
 echo "Default credentials: admin@example.com / changeme"
