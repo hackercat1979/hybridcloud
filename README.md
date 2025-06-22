@@ -12,6 +12,6 @@ curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/inst
 sed -i 's/\r$//' install-nginx.sh
 bash install-nginx.sh
 
-curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/install-nginx.sh -o install-nginx.sh
-sed -i 's/\r$//' install-nginx.sh
-bash install-nginx.sh
+curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-authentik.sh -o setup-authentik.sh
+sed -i 's/\r$//' setup-authentik.sh
+bash setup-authentik.sh
