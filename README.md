@@ -8,6 +8,6 @@ curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setu
 sed -i 's/\r$//' setup-tailscale.sh
 bash setup-tailscale.sh
 
-curl -fsSL https://github.com/hackercat1979/hybridcloud/blob/main/install-nginx.sh -o install-nginx.sh
+curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/install-nginx.sh -o install-nginx.sh
 sed -i 's/\r$//' install-nginx.sh
 bash install-nginx.sh
