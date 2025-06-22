@@ -8,6 +8,11 @@ apt update && apt upgrade -y
 echo "Installing prerequisites..."
 apt install -y curl software-properties-common apt-transport-https ca-certificates ufw fail2ban
 
+echo "Installing Tailscale ..."
+curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
+sed -i 's/\r$//' setup-tailscale.sh
+bash setup-tailscale.sh -n de-flk-authentik -e false -r false
+
 echo "Installing Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
