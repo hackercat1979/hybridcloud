@@ -14,93 +14,38 @@ fi
 
 # Install Docker Compose if missing
 if ! command -v docker-compose >/dev/null; then
-  echo "🔧 Installing Docker Compose..."
+  echo "📦 Installing Docker Compose..."
   curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   chmod +x /usr/local/bin/docker-compose
 fi
 
-# Generate secure secret key
-SECRET_KEY=$(openssl rand -hex 32)
-
 # Create directory structure
-mkdir -p /opt/authentik/{db,redis,media,templates}
+mkdir -p /opt/authentik/
 cd /opt/authentik
 
-echo "📝 Writing docker-compose.yml..."
+# Download docker-compose.yml
+wget https://goauthentik.io/docker-compose.yml
 
-cat > docker-compose.yml <<EOF
-version: "3.4"
+#generate a password
+echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> .env
+echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
+echo "AUTHENTIK_ERROR_REPORTING__ENABLED=true" >> .env
 
-services:
-  redis:
-    image: redis:alpine
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - ./redis:/data
+echo "📦 Pulling Authentik..."
+docker-compose pull
 
-  postgresql:
-    image: postgres:13
-    restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: authentikpassword
-      POSTGRES_USER: authentik
-      POSTGRES_DB: authentik
-    volumes:
-      - ./db:/var/lib/postgresql/data
-
-  authentik-server:
-    image: ghcr.io/goauthentik/server:latest
-    restart: unless-stopped
-    depends_on:
-      - postgresql
-      - redis
-    ports:
-      - "9000:9000"
-    environment:
-      AUTHENTIK_SECRET_KEY: ${SECRET_KEY}
-      AUTHENTIK_REDIS__HOST: redis
-      AUTHENTIK_POSTGRESQL__HOST: postgresql
-      AUTHENTIK_POSTGRESQL__USER: authentik
-      AUTHENTIK_POSTGRESQL__PASSWORD: authentikpassword
-      AUTHENTIK_POSTGRESQL__NAME: authentik
-    volumes:
-      - ./media:/media
-      - ./templates:/templates
-
-  authentik-worker:
-    image: ghcr.io/goauthentik/server:latest
-    restart: unless-stopped
-    depends_on:
-      - authentik-server
-    environment:
-      AUTHENTIK_SECRET_KEY: ${SECRET_KEY}
-      AUTHENTIK_REDIS__HOST: redis
-      AUTHENTIK_POSTGRESQL__HOST: postgresql
-      AUTHENTIK_POSTGRESQL__USER: authentik
-      AUTHENTIK_POSTGRESQL__PASSWORD: authentikpassword
-      AUTHENTIK_POSTGRESQL__NAME: authentik
-    volumes:
-      - ./media:/media
-      - ./templates:/templates
-EOF
-
-echo "🚀 Starting Authentik..."
+echo "➡️ Starting Authentik..."
 docker-compose up -d
 
 # OPTIONAL: Configure firewall (commented out for testing)
-: '
-echo "🛡️ Configuring UFW (optional)..."
-ufw default deny incoming
-ufw allow from 100.64.0.0/10 to any port 9000 proto tcp   # Allow Authentik via Tailscale only
+#: '
+#echo "🛡️ Configuring UFW (optional)..."
+#ufw default deny incoming
+#ufw allow from 100.64.0.0/10 to any port 9000 proto tcp   # Allow Authentik via Tailscale only
 # ufw allow 80,443/tcp   # Uncomment if proxying via Nginx Proxy Manager
 # ufw allow 22/tcp       # Uncomment if SSH access is needed
-ufw --force enable
-'
+#ufw --force enable
+#'
 
 # Detect Tailscale IP for output
 if command -v tailscale >/dev/null; then
