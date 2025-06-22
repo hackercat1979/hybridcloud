@@ -6,11 +6,10 @@ spinner() {
     local pid=$1
     local delay=0.1
     local spinstr='|/-\'
-    while kill -0 $pid 2>/dev/null; do
-        for i in $(seq 0 3); do
-            printf "\r[%c] " "${spinstr:i:1}"
-            sleep $delay
-        done
+    local i=0
+    while kill -0 "$pid" 2>/dev/null; do
+        printf "\r[%c] " "${spinstr:i++%${#spinstr}:1}"
+        sleep $delay
     done
     printf "\r    \r"
 }
@@ -52,16 +51,19 @@ while getopts "k:n:e:r:h" opt; do
     esac
 done
 
-# Validate auth key
+# Prompt for auth key if not provided
 if [[ -z "$TAILSCALE_AUTHKEY" ]]; then
-    echo "❌ Error: Auth key (-k) is required."
-    print_usage
+    read -rp "Enter Tailscale Auth Key: " TAILSCALE_AUTHKEY
+    if [[ -z "$TAILSCALE_AUTHKEY" ]]; then
+        echo "Error: Auth key is required."
+        print_usage
+    fi
 fi
 
 # Set default hostname if not provided
 TAILSCALE_HOSTNAME=${TAILSCALE_HOSTNAME:-$(hostname)}
 
-echo "🧹 Uninstalling any existing Tailscale and jq installations..."
+echo "Uninstalling any existing Tailscale and jq installations..."
 {
     systemctl stop tailscaled 2>/dev/null || true
     systemctl disable tailscaled 2>/dev/null || true
@@ -88,13 +90,13 @@ if [[ -z "$ROUTES_SET" ]]; then
     fi
 fi
 
-echo "📦 Installing prerequisites (curl, gnupg2, jq)..."
+echo "Installing prerequisites (curl, gnupg2, jq)..."
 {
     apt-get update -y >/dev/null 2>&1
     apt-get install -y curl gnupg2 jq >/dev/null 2>&1
 } & spinner $!
 
-echo "🔐 Adding Tailscale GPG key and repository..."
+echo "Adding Tailscale GPG key and repository..."
 {
     curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.gpg | \
         gpg --yes --dearmor -o /usr/share/keyrings/tailscale-archive-keyring.gpg
@@ -103,7 +105,7 @@ echo "🔐 Adding Tailscale GPG key and repository..."
     apt-get update -y >/dev/null 2>&1
 } & spinner $!
 
-echo "📥 Installing Tailscale..."
+echo "Installing Tailscale..."
 {
     apt-get install -y tailscale >/dev/null 2>&1
 } & spinner $!
@@ -117,7 +119,7 @@ EOF
     sysctl --system 2>&1 | grep -v "Invalid argument" >/dev/null
 fi
 
-echo "🚀 Starting Tailscale and authenticating..."
+echo "Starting Tailscale and authenticating..."
 systemctl enable --now tailscaled
 
 tailscale up \
