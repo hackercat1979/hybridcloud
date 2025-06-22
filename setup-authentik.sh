@@ -3,7 +3,7 @@ set -e
 echo "📦 Installing Tailscale ..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-vpn.sh -o setup-vpn.sh
 sed -i 's/\r$//' setup-vpn.sh
-bash setup-vpn.sh -k tskey-auth-k23TFtWpoG11CNTRL-HxWzktC1vVSqpQS6B2gLVSQwRsNqgqnrV -n de-flk-authentik -e false -r false
+bash setup-vpn.sh  -n de-flk-authentik -e false -r false #-k and keydata
 
 echo "📦 Installing dependencies..."
 apt update && apt install -y curl ca-certificates software-properties-common apt-transport-https gnupg lsb-release openssl fail2ban
