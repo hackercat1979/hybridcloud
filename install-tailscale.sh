@@ -1,12 +1,12 @@
 #!/bin/bash
+
 set -e
 
 spinner() {
-    # Simple spinner animation while command runs in background
     local pid=$1
     local delay=0.1
     local spinstr='|/-\'
-    while kill -0 "$pid" 2>/dev/null; do
+    while kill -0 $pid 2>/dev/null; do
         for i in $(seq 0 3); do
             printf "\r[%c] " "${spinstr:i:1}"
             sleep $delay
@@ -18,15 +18,15 @@ spinner() {
 echo "Uninstalling any existing Tailscale and jq installations..."
 
 {
-    sudo systemctl stop tailscaled || true
-    sudo systemctl disable tailscaled || true
-    sudo apt-get remove --purge -y tailscale jq || true
-    sudo rm -f /etc/apt/sources.list.d/tailscale.list /usr/share/keyrings/tailscale-archive-keyring.gpg || true
-    sudo apt-get update -y
+    systemctl stop tailscaled 2>/dev/null || true
+    systemctl disable tailscaled 2>/dev/null || true
+    apt-get remove --purge -y tailscale jq >/dev/null 2>&1 || true
+    rm -f /etc/apt/sources.list.d/tailscale.list /usr/share/keyrings/tailscale-archive-keyring.gpg
+    apt-get update -y >/dev/null 2>&1
 } & spinner $!
 
-# -------- USER PROMPTS --------
-read -rsp "Enter your Tailscale Auth Key: " TAILSCALE_AUTHKEY
+echo "Enter your Tailscale Auth Key:"
+read -rsp "> " TAILSCALE_AUTHKEY
 echo ""
 if [[ -z "$TAILSCALE_AUTHKEY" ]]; then
     echo "Error: No auth key provided. Exiting."
@@ -52,53 +52,45 @@ if [[ "$enable_subnet" =~ ^[Yy]$ ]]; then
     fi
 fi
 
-# -------- INSTALL TAILSCALE & JQ --------
-echo "Installing Tailscale and jq..."
-
+echo "Installing prerequisites curl, gnupg2, jq..."
 {
-    sudo apt-get install -y curl gnupg2 jq
+    apt-get update -y >/dev/null 2>&1
+    apt-get install -y curl gnupg2 jq >/dev/null 2>&1
 } & spinner $!
 
 echo "Adding Tailscale GPG key and repository..."
-
 {
-    curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/tailscale-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/tailscale.list
-    sudo apt-get update -y
+    curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.gpg | gpg --yes --dearmor -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu jammy main" > /etc/apt/sources.list.d/tailscale.list
+    apt-get update -y >/dev/null 2>&1
 } & spinner $!
 
 echo "Installing tailscale..."
-
 {
-    sudo apt-get install -y tailscale
+    apt-get install -y tailscale >/dev/null 2>&1
 } & spinner $!
 
-# -------- ENABLE IP FORWARDING IF NEEDED --------
 if [[ -n "$ADVERTISE_EXIT_NODE" || -n "$ADVERTISE_SUBNETS" ]]; then
     echo "Enabling IPv4 and IPv6 forwarding for exit node and subnet routing..."
-
-    sudo tee /etc/sysctl.d/99-tailscale.conf >/dev/null <<EOF
+    cat <<EOF | tee /etc/sysctl.d/99-tailscale.conf >/dev/null
 net.ipv4.ip_forward = 1
 net.ipv6.conf.all.forwarding = 1
 EOF
 
-    # Suppress "Invalid argument" warnings
-    sudo sysctl --system 2>&1 | grep -v "Invalid argument"
+    # Apply sysctl silently, suppress "Invalid argument" warnings
+    sysctl --system 2>&1 | grep -v "Invalid argument" >/dev/null
 fi
 
-# -------- START AND AUTHENTICATE --------
 echo "Starting Tailscale and authenticating..."
+systemctl enable --now tailscaled
 
-sudo systemctl enable --now tailscaled
-
-sudo tailscale up \
+tailscale up \
     --authkey "$TAILSCALE_AUTHKEY" \
     --hostname "$TAILSCALE_HOSTNAME" \
     --ssh \
     $ADVERTISE_EXIT_NODE \
     $ADVERTISE_SUBNETS
 
-# -------- OUTPUT --------
 echo ""
 echo "✅ Tailscale started successfully!"
 echo "🌐 Tailscale IPv4 Address:"
