@@ -35,12 +35,16 @@ while getopts "k:n:e:r:h" opt; do
             EXIT_NODE_SET=1
             if [[ "$OPTARG" =~ ^[Yy]([Ee][Ss])?$ || "$OPTARG" == "true" ]]; then
                 ENABLE_EXIT_NODE="--advertise-exit-node"
+            else
+                ENABLE_EXIT_NODE=""
             fi
             ;;
         r)
             ROUTES_SET=1
             if [[ "$OPTARG" != "false" && "$OPTARG" != "none" && -n "$OPTARG" ]]; then
                 ADVERTISE_SUBNETS="--advertise-routes=$(echo "$OPTARG" | tr -d '[:space:]')"
+            else
+                ADVERTISE_SUBNETS=""
             fi
             ;;
         h) print_usage ;;
