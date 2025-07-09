@@ -13,6 +13,8 @@ bash setup-nginx.sh
 2) Install Authentik
    
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-authentik.sh -o setup-authentik.sh
+
 sed -i 's/\r$//' setup-authentik.sh
+
 bash setup-authentik.sh
 
