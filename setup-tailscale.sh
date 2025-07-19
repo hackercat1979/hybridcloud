@@ -141,7 +141,7 @@ tailscale up \
     --hostname "$TAILSCALE_HOSTNAME" \
     $ENABLE_TAILSCALE_SSH \
     $ENABLE_EXIT_NODE \
-    $ADVERTISE_SUBNETS
+    $ADVERTISE_SUBNETS \
     --accept-routes
 
 echo ""
