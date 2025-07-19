@@ -1,18 +1,44 @@
+##!/bin/bash
+#set -e
+#
+#spinner() {
+#  local pid=$1
+#  local delay=0.1
+#  local spinstr='|/-\'
+#  while kill -0 "$pid" 2>/dev/null; do
+#    for (( i=0; i<${#spinstr}; i++ )); do
+#      printf "\r%s" "${spinstr:i:1}"
+#      sleep $delay
+#    done
+#  done
+#  printf "\r"
+#}
+
 #!/bin/bash
+
 set -e
 
 spinner() {
-  local pid=$1
-  local delay=0.1
-  local spinstr='|/-\'
-  while kill -0 "$pid" 2>/dev/null; do
-    for (( i=0; i<${#spinstr}; i++ )); do
-      printf "\r%s" "${spinstr:i:1}"
-      sleep $delay
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\'
+    while kill -0 $pid 2>/dev/null; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
     done
-  done
-  printf "\r"
+    printf "      \b\b\b\b\b\b"
 }
+
+echo -n "Updating system..."
+(apt update -y >/dev/null 2>&1 && apt upgrade -y >/dev/null 2>&1) & spinner
+echo " done."
+
+echo -n "Installing prerequisites..."
+(apt install -y curl software-properties-common apt-transport-https ca-certificates ufw fail2ban >/dev/null 2>&1) & spinner
+echo " done."
 
 echo "Installing Tailscale ..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
