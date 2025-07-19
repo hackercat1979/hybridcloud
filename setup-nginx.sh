@@ -2,20 +2,36 @@
 
 set -e
 
-echo "Updating system..."
-apt update && apt upgrade -y
+spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\'
+    while kill -0 $pid 2>/dev/null; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "      \b\b\b\b\b\b"
+}
 
-echo "Installing prerequisites..."
-apt install -y curl software-properties-common apt-transport-https ca-certificates ufw fail2ban
+echo -n "Updating system..."
+(apt update -y >/dev/null 2>&1 && apt upgrade -y >/dev/null 2>&1) & spinner
+echo " done."
 
-echo "Installing Tailscale ..."
+echo -n "Installing prerequisites..."
+(apt install -y curl software-properties-common apt-transport-https ca-certificates ufw fail2ban >/dev/null 2>&1) & spinner
+echo " done."
+
+echo "Installing Tailscale..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
 sed -i 's/\r$//' setup-tailscale.sh
-bash setup-tailscale.sh -e false -r false -s false
+bash setup-tailscale.sh -e false -r false
 
 echo "Installing Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
+sh get-docker.sh >/dev/null 2>&1
 rm get-docker.sh
 
 echo "Installing Docker Compose..."
@@ -25,21 +41,6 @@ chmod +x /usr/local/bin/docker-compose
 echo "Creating Nginx Proxy Manager directory..."
 mkdir -p /opt/nginx-proxy-manager
 cd /opt/nginx-proxy-manager
-
-echo "Configure Nginx Proxy Manager default admin user..."
-read -rp "Enter admin email address: " ADMIN_EMAIL
-
-while true; do
-    read -rsp "Enter admin password: " ADMIN_PASS
-    echo
-    read -rsp "Confirm admin password: " ADMIN_PASS_CONFIRM
-    echo
-    if [ "$ADMIN_PASS" = "$ADMIN_PASS_CONFIRM" ]; then
-        break
-    else
-        echo "Passwords do not match. Please try again."
-    fi
-done
 
 echo "Writing docker-compose.yml..."
 cat > docker-compose.yml <<EOF
@@ -57,28 +58,8 @@ services:
       - ./letsencrypt:/etc/letsencrypt
 EOF
 
-echo "Creating default.json with provided credentials..."
-mkdir -p /opt/nginx-proxy-manager/data
-cat > /opt/nginx-proxy-manager/data/default.json <<EOF
-{
-  "default_user": {
-    "email": "$ADMIN_EMAIL",
-    "password": "$ADMIN_PASS"
-  }
-}
-EOF
-chown -R 1000:1000 /opt/nginx-proxy-manager/data
-
 echo "Starting Nginx Proxy Manager with Docker Compose..."
 docker-compose up -d
-
-# Wait for container to consume default.json
-echo "Waiting for NPM to initialize (10s)..."
-sleep 10
-
-# Remove sensitive default.json
-echo "Removing default.json for security..."
-rm -f /opt/nginx-proxy-manager/data/default.json
 
 echo "Configuring firewall with UFW..."
 ufw default deny incoming
@@ -109,5 +90,11 @@ systemctl restart fail2ban
 
 echo
 echo "Nginx Proxy Manager setup complete!"
-echo "Access Admin UI via Tailscale IP at: http://<tailscale-ip>:81"
-echo "To expose services, use DNS + Proxy Host settings in the web UI."
+echo
+echo "IMPORTANT:"
+echo "Access the Admin UI at: http://<tailscale-ip>:81"
+echo "Default login is : admin@example.com / changeme"
+echo "PLEASE change the default password immediately after first login."
+echo
+echo "Ports 80 and 443 are open for proxying your sites."
+echo "Port 81 (admin UI) is restricted to Tailscale network."
