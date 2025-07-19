@@ -62,12 +62,13 @@ echo "Starting Nginx Proxy Manager with Docker Compose..."
 docker-compose up -d
 
 echo "Configuring firewall with UFW..."
+echo
 ufw default deny incoming
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw allow from 100.64.0.0/10 to any port 81 proto tcp
 ufw --force enable
-
+echo
 echo "Configuring fail2ban..."
 cat > /etc/fail2ban/jail.local <<EOL
 [DEFAULT]
@@ -85,15 +86,21 @@ port = http,https
 logpath = /var/log/nginx/error.log
 maxretry = 3
 EOL
-
+echo
 systemctl restart fail2ban
+
+# Try to get Tailscale IP
+TAILSCALE_IP=$(tailscale ip -4 | grep '^100\.')
 
 echo
 echo "Nginx Proxy Manager setup complete!"
 echo
-echo "IMPORTANT:"
-echo "Access the Admin UI at: http://<tailscale-ip>:81"
-echo "Default login is : admin@example.com / changeme"
+echo "⚠IMPORTANT:"
+if [ -n "$TAILSCALE_IP" ]; then
+    echo "Access the Admin UI at: http://$TAILSCALE_IP:81"
+else
+    echo "Access the Admin UI at: http://<tailscale-ip>:81 (Tailscale IP not detected)"
+fi
 echo "PLEASE change the default password immediately after first login."
 echo
 echo "Ports 80 and 443 are open for proxying your sites."
