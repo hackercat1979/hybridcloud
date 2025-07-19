@@ -142,6 +142,7 @@ tailscale up \
     $ENABLE_TAILSCALE_SSH \
     $ENABLE_EXIT_NODE \
     $ADVERTISE_SUBNETS
+    --accept-routes
 
 echo ""
 echo "Tailscale started successfully!"
