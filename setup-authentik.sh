@@ -17,7 +17,7 @@ spinner() {
 echo "Installing Tailscale ..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
 sed -i 's/\r$//' setup-tailscale.sh
-bash setup-tailscale.sh -n de-flk-authentik -e false -r false
+bash setup-tailscale.sh -n de-flk-authentik -e false -r false -s false
 
 echo "Starting install Authentik ..."
 
