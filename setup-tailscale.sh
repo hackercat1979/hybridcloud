@@ -15,18 +15,19 @@ spinner() {
 }
 
 print_usage() {
-    echo "Usage: $0 -k <authkey> [-n <hostname>] [-e true|false] [-r <subnets|false>]"
+    echo "Usage: $0 -k <authkey> [-n <hostname>] [-e true|false] [-r <subnets|false>] [-s true|false]"
     echo ""
     echo "Options:"
     echo "  -k   Tailscale Auth Key (required)"
     echo "  -n   Hostname to register with Tailscale (default: current hostname)"
     echo "  -e   Advertise as exit node: true or false (default: ask)"
     echo "  -r   Advertise routes (subnets), e.g. 192.168.1.0/24 or 'false' to disable (default: ask)"
+    echo "  -s   Enable Tailscale SSH: true or false (default: true)"
     exit 1
 }
 
 # Parse CLI args
-while getopts "k:n:e:r:h" opt; do
+while getopts "k:n:e:r:s:h" opt; do
     case ${opt} in
         k) TAILSCALE_AUTHKEY="$OPTARG" ;;
         n) TAILSCALE_HOSTNAME="$OPTARG" ;;
@@ -46,6 +47,14 @@ while getopts "k:n:e:r:h" opt; do
                 ADVERTISE_SUBNETS=""
             fi
             ;;
+        s)
+            SSH_SET=1
+            if [[ "$OPTARG" =~ ^[Yy]([Ee][Ss])?$ || "$OPTARG" == "true" ]]; then
+                ENABLE_TAILSCALE_SSH="--ssh"
+            else
+                ENABLE_TAILSCALE_SSH=""
+            fi
+            ;;
         h) print_usage ;;
         *) print_usage ;;
     esac
@@ -62,6 +71,11 @@ fi
 
 # Set default hostname if not provided
 TAILSCALE_HOSTNAME=${TAILSCALE_HOSTNAME:-$(hostname)}
+
+# Default SSH behavior if not set
+if [[ -z "$SSH_SET" ]]; then
+    ENABLE_TAILSCALE_SSH="--ssh"
+fi
 
 echo "Uninstalling any existing Tailscale and jq installations..."
 {
@@ -125,12 +139,10 @@ systemctl enable --now tailscaled
 tailscale up \
     --authkey "$TAILSCALE_AUTHKEY" \
     --hostname "$TAILSCALE_HOSTNAME" \
-    --ssh \
+    $ENABLE_TAILSCALE_SSH \
     $ENABLE_EXIT_NODE \
     $ADVERTISE_SUBNETS
 
 echo ""
 echo "Tailscale started successfully!"
 echo "Tailscale IPv4 Address: $(tailscale ip -4)"
-#echo "Tailscale IPv4 Address:"
-#tailscale ip -4
