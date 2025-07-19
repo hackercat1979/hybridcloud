@@ -11,7 +11,7 @@ apt install -y curl software-properties-common apt-transport-https ca-certificat
 echo "Installing Tailscale ..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
 sed -i 's/\r$//' setup-tailscale.sh
-bash setup-tailscale.sh -e false -r false
+bash setup-tailscale.sh -e false -r false -s false
 
 echo "Installing Docker..."
 curl -fsSL https://get.docker.com -o get-docker.sh
