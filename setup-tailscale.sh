@@ -2,6 +2,9 @@
 
 set -e
 
+# Ensure script is run as root
+[[ $EUID -ne 0 ]] && echo "❌ Please run as root." && exit 1
+
 spinner() {
     local pid=$1
     local delay=0.1
@@ -60,12 +63,16 @@ while getopts "k:n:e:r:s:h" opt; do
     esac
 done
 
-# Prompt for auth key if not provided
+# Prompt for auth key if not provided (secure input)
 if [[ -z "$TAILSCALE_AUTHKEY" ]]; then
-    read -rp "Enter Tailscale Auth Key: " TAILSCALE_AUTHKEY
-    if [[ -z "$TAILSCALE_AUTHKEY" ]]; then
-        echo "Error: Auth key is required."
-        print_usage
+    echo
+    read -srp "Enter Tailscale Auth Key: " TAILSCALE_AUTHKEY
+    echo
+    read -srp "Confirm Auth Key: " TAILSCALE_AUTHKEY_CONFIRM
+    echo
+    if [[ "$TAILSCALE_AUTHKEY" != "$TAILSCALE_AUTHKEY_CONFIRM" ]]; then
+        echo "Auth keys do not match. Aborting."
+        exit 1
     fi
 fi
 
@@ -124,6 +131,7 @@ echo "Installing Tailscale..."
     apt-get install -y tailscale >/dev/null 2>&1
 } & spinner $!
 
+# Enable forwarding if needed
 if [[ -n "$ENABLE_EXIT_NODE" || -n "$ADVERTISE_SUBNETS" ]]; then
     echo "🔧 Enabling IPv4 and IPv6 forwarding..."
     cat <<EOF | tee /etc/sysctl.d/99-tailscale.conf >/dev/null
@@ -136,14 +144,18 @@ fi
 echo "Starting Tailscale and authenticating..."
 systemctl enable --now tailscaled
 
-tailscale up \
+# Start Tailscale with options
+if ! tailscale up \
     --authkey "$TAILSCALE_AUTHKEY" \
     --hostname "$TAILSCALE_HOSTNAME" \
     $ENABLE_TAILSCALE_SSH \
     $ENABLE_EXIT_NODE \
     $ADVERTISE_SUBNETS \
-    --accept-routes
+    --accept-routes; then
+    echo "❌ Tailscale failed to connect. Check your auth key and network."
+    exit 1
+fi
 
 echo ""
-echo "Tailscale started successfully!"
+echo "✅ Tailscale started successfully!"
 echo "Tailscale IPv4 Address: $(tailscale ip -4)"
