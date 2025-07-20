@@ -3,7 +3,7 @@
 set -e
 
 # Ensure script is run as root
-[[ $EUID -ne 0 ]] && echo "❌ Please run as root." && exit 1
+[[ $EUID -ne 0 ]] && echo "Please run as root." && exit 1
 
 spinner() {
     local pid=$1
@@ -133,7 +133,7 @@ echo "Installing Tailscale..."
 
 # Enable forwarding if needed
 if [[ -n "$ENABLE_EXIT_NODE" || -n "$ADVERTISE_SUBNETS" ]]; then
-    echo "🔧 Enabling IPv4 and IPv6 forwarding..."
+    echo "Enabling IPv4 and IPv6 forwarding..."
     cat <<EOF | tee /etc/sysctl.d/99-tailscale.conf >/dev/null
 net.ipv4.ip_forward = 1
 net.ipv6.conf.all.forwarding = 1
@@ -152,10 +152,10 @@ if ! tailscale up \
     $ENABLE_EXIT_NODE \
     $ADVERTISE_SUBNETS \
     --accept-routes; then
-    echo "❌ Tailscale failed to connect. Check your auth key and network."
+    echo "Tailscale failed to connect. Check your auth key and network."
     exit 1
 fi
 
 echo ""
-echo "✅ Tailscale started successfully!"
+echo "Tailscale started successfully!"
 echo "Tailscale IPv4 Address: $(tailscale ip -4)"
