@@ -24,7 +24,26 @@ echo -n "Installing prerequisites..."
 (apt install -y curl software-properties-common apt-transport-https ca-certificates ufw fail2ban >/dev/null 2>&1) & spinner
 echo " done."
 
-echo "Installing Tailscale ..."
+echo
+echo "Please enter a password for the root user (used for SSH login):"
+read -s -p "Password: " ROOT_PWD
+echo
+read -s -p "Confirm Password: " ROOT_PWD_CONFIRM
+echo
+
+if [ "$ROOT_PWD" != "$ROOT_PWD_CONFIRM" ]; then
+    echo "Passwords do not match. Aborting."
+    exit 1
+fi
+
+echo "root:$ROOT_PWD" | chpasswd
+
+echo "Configuring SSH to allow root login with password..."
+sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+systemctl restart sshd
+
+echo "Installing Tailscale..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
 sed -i 's/\r$//' setup-tailscale.sh
 bash setup-tailscale.sh -n de-flk-authentik -e false -r false -s false
@@ -38,22 +57,21 @@ spinner $!
 echo "Dependencies installed."
 
 if ! command -v docker >/dev/null; then
-  echo "Installing Docker..."
+  echo -n "Installing Docker..."
   curl -fsSL https://get.docker.com -o get-docker.sh &>/dev/null
-  sh get-docker.sh &>/dev/null &
-  spinner $!
+  (sh get-docker.sh &>/dev/null) & spinner
   rm get-docker.sh
-  echo "Docker installed."
+  echo " done."
 else
   echo "Docker already installed."
 fi
 
 if ! command -v docker-compose >/dev/null; then
-  echo "Installing Docker Compose..."
+  echo -n "Installing Docker Compose..."
   curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose &>/dev/null &
   spinner $!
   chmod +x /usr/local/bin/docker-compose
-  echo "Docker Compose installed."
+  echo " done."
 else
   echo "Docker Compose already installed."
 fi
@@ -99,19 +117,11 @@ echo "Installing and configuring UFW to allow only Tailscale access..."
 
 apt install -y -qq ufw &>/dev/null
 
-# Default deny all incoming traffic from the internet
 ufw default deny incoming
 ufw default allow outgoing
-
-# Allow SSH from Tailscale
 ufw allow in on tailscale0 to any port 22 proto tcp
-
-# Allow Authentik internal HTTP (9000) and HTTPS (9443) from Tailscale
 ufw allow in on tailscale0 to any port 9000 proto tcp
 ufw allow in on tailscale0 to any port 9443 proto tcp
-
-# Enable the firewall
 ufw --force enable
 
 echo "UFW enabled with Tailscale-only access to SSH, Authentik HTTP (9000), and HTTPS (9443)."
-
