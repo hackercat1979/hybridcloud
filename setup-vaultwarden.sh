@@ -22,6 +22,11 @@ echo "Installing prerequisites..."
 (apt install -y curl docker.io docker-compose ufw fail2ban >/dev/null 2>&1) & spinner $!
 echo "Prerequisites installed."
 
+echo "Installing Tailscale..."
+curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
+sed -i 's/\r$//' setup-tailscale.sh
+bash setup-tailscale.sh -e false -r false -s false
+
 echo "Creating vaultwarden directory..."
 mkdir -p /opt/vaultwarden
 cd /opt/vaultwarden
