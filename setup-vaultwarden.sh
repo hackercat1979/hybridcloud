@@ -49,18 +49,16 @@ echo "Starting Vaultwarden container..."
 docker-compose up -d & spinner $!
 echo "Vaultwarden is running."
 
+echo "Configuring firewall with UFW..."
+
 ufw default deny incoming
 ufw default allow outgoing
+
 ufw allow in on tailscale0 to any port 22 proto tcp
-ufw allow in on tailscale0 to any port 9000 proto tcp
-ufw allow in on tailscale0 to any port 9443 proto tcp
+ufw allow in on tailscale0 to any port 8080 proto tcp
+ufw allow in on tailscale0 to any port 8443 proto tcp
 ufw --force enable
 
-# Allow Vaultwarden ports only from Tailscale subnet
-ufw allow from 100.64.0.0/10 to any port 8080 proto tcp
-ufw allow from 100.64.0.0/10 to any port 8443 proto tcp
-
-ufw --force enable
 echo "Firewall configured."
 
 echo "Configuring fail2ban..."
