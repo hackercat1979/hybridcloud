@@ -25,3 +25,11 @@ curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setu
 sed -i 's/\r$//' setup-tailscale.sh
 
 bash setup-tailscale.sh
+
+4) for Vaultwarden
+
+curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-vaultwarden.sh -o setup-vaultwarden.sh
+
+sed -i 's/\r$//' setup-vaultwarden.sh
+
+bash setup-vaultwarden.sh
