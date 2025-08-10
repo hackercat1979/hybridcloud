@@ -126,4 +126,4 @@ fi
 echo "PLEASE change the default password immediately after first login."
 echo
 echo "Ports 80 and 443 are open for proxying your sites."
-echo "Port 81 (admin UI) is restricted to Tailscale network."
+echo "Port 22 and 81 (ssh+admin UI) is restricted to Tailscale network."
