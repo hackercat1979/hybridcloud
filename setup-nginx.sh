@@ -24,24 +24,24 @@ echo -n "Installing prerequisites..."
 (apt install -y curl software-properties-common apt-transport-https ca-certificates ufw fail2ban >/dev/null 2>&1) & spinner
 echo " done."
 
-echo
-echo "Please enter a password for the root user (used for SSH login):"
-read -s -p "Password: " ROOT_PWD
-echo
-read -s -p "Confirm Password: " ROOT_PWD_CONFIRM
-echo
+#echo
+#echo "Please enter a password for the root user (used for SSH login):"
+#read -s -p "Password: " ROOT_PWD
+#echo
+#read -s -p "Confirm Password: " ROOT_PWD_CONFIRM
+#echo
 
-if [ "$ROOT_PWD" != "$ROOT_PWD_CONFIRM" ]; then
-    echo "Passwords do not match. Aborting."
-    exit 1
-fi
+#if [ "$ROOT_PWD" != "$ROOT_PWD_CONFIRM" ]; then
+#    echo "Passwords do not match. Aborting."
+#    exit 1
+#fi
 
-echo "root:$ROOT_PWD" | chpasswd
+#echo "root:$ROOT_PWD" | chpasswd
 
-echo "Configuring SSH to allow root login with password..."
-sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
-sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-systemctl restart sshd
+#echo "Configuring SSH to allow root login with password..."
+#sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+#sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+#systemctl restart sshd
 
 echo "Installing Tailscale..."
 curl -fsSL https://raw.githubusercontent.com/hackercat1979/hybridcloud/main/setup-tailscale.sh -o setup-tailscale.sh
